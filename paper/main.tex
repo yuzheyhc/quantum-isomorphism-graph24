@@ -1,0 +1,791 @@
+\documentclass[11pt,reqno]{amsart}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,mathtools,booktabs,array,microtype}
+\usepackage[margin=1.02in]{geometry}
+\usepackage[hidelinks]{hyperref}
+\numberwithin{equation}{section}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{example}[theorem]{Example}
+\newcommand{\qc}{\mathrm{qc}}
+\newcommand{\qf}{\mathrm{fin}}
+\emergencystretch=1.25em
+\newcommand{\homc}{\operatorname{hom}}
+\allowdisplaybreaks[1]
+
+\title[Minimum order for quantum graph isomorphism]{The Minimum Order for Quantum Isomorphism of Nonisomorphic Graphs}
+\author{Haochen Yu}
+\date{November 26, 2026}
+\newcommand{\paperkeywords}{Quantum graph isomorphism, nonlocal games, perfect strategies, coherent configurations}
+\hypersetup{pdfauthor={Haochen Yu},pdftitle={The Minimum Order for Quantum Isomorphism of Nonisomorphic Graphs},pdfkeywords={Quantum graph isomorphism, nonlocal games, perfect strategies, coherent configurations},bookmarksnumbered=true}
+\begin{document}
+\begin{abstract}
+Two nonisomorphic graphs admitting a perfect quantum strategy in the graph isomorphism game must each have at least $24$ vertices. The lower bound holds in the commuting-operator model and is attained by the magic-square graphs in the finite-dimensional tensor-product model. To prove it, we reconstruct a vertex bijection from relations on ordered pairs, using incidence matrices to make the local bijections agree. Small-order classifications and a finite verification in Lean settle the remaining cases. It follows that homomorphism counts from planar graphs determine every graph of order $n$ up to isomorphism exactly when $n\le23$. We also show that the quantum-isomorphism class of the standard magic-square graph contains precisely two ordinary isomorphism types.
+
+\smallskip\noindent\textit{Keywords.} \paperkeywords.
+\end{abstract}
+\maketitle
+\section{Introduction}\label{sec:intro}
+In the graph isomorphism game, two players try to convince a referee that they know the same isomorphism between two finite simple undirected graphs $G$ and $H$ \cite[\S3]{AMRSSV}. They may agree on a strategy beforehand. During play, each sees only the referee's question to that player, and they cannot communicate. A strategy is \emph{perfect} if it wins with probability one on every pair of questions.
+
+The referee sends each player a vertex of either graph, and each answers with a vertex of the other. Each question and answer thus specifies a proposed match $(x,a)\in V(G)\times V(H)$. Write $A_G(x,y)=\mathbf 1_{x\sim_G y}$ for the adjacency matrix of $G$. The two matches $(x,a)$ and $(y,b)$ win precisely when
+\begin{equation}\label{eq:game-type}
+ t_G(x,y)=t_H(a,b),\qquad t_G(x,y)=\bigl(\mathbf 1_{x=y},A_G(x,y)\bigr).
+\end{equation}
+This tests equality, adjacency and nonadjacency. An isomorphism $f:G\to H$ gives a perfect classical strategy by answering with $f$ or $f^{-1}$. Conversely, identical questions force the two deterministic answer functions to agree. If the answer to $x$ is $a$, asking the questions $x,a$ forces the answer to $a$ to be $x$. The resulting functions are inverse bijections and \eqref{eq:game-type} makes them isomorphisms. Shared randomness gives the same conclusion, since there are only finitely many pairs of questions \cite[\S3.1]{AMRSSV}.
+
+Quantum players can share an entangled state. In the finite-dimensional tensor-product model, each player's measurements act on a separate factor. In the commuting-operator model both act on one Hilbert space, possibly infinite dimensional, and measurements of different players commute. Write $G\cong_{\qf}H$ and $G\cong_{\qc}H$ for the existence of a perfect strategy in these respective models. For $t\in\{\qf,\qc\}$ put
+\[
+ m_t=\min\bigl\{n:\exists\,G,H\quad
+         |V(G)|=|V(H)|=n,\quad G\cong_t H,\quad G\not\cong H\bigr\}.
+\]
+The magic-square construction of Atserias et al. gives $m_{\qf}\le24$ \cite[\S6]{AMRSSV}. Schmidt records the lower bound $16$ after posing the minimum-order problem \cite[Question~8.5.1 and the following paragraph]{Schmidt}. His quantum-isomorphism matrix is equivalent to a perfect commuting-operator strategy \cite[Thm.~4.4]{LMR}. Weber asks the same minimum-order question in \cite[Problem~3.12]{Weber}. Since tensor-product strategies are commuting strategies, the interval to be settled is $16\le m_{\qc}\le m_{\qf}\le24$.
+
+\begin{theorem}[Minimum order]\label{thm:main}
+The two minimum orders satisfy $m_{\qc}=m_{\qf}=24$.
+\end{theorem}
+
+The obstacle to the lower bound is simultaneous realization. A strategy gives a matrix of projections $U$ with $A_GU=UA_H$. From this equation we obtain a correspondence between colors of ordered vertex pairs. The diagonal colors split the vertices into \emph{fibers}. An isomorphism on each fiber will give a graph isomorphism only if the choices also preserve adjacency between fibers. Section~\ref{sec:transport} constructs the colors. Section~\ref{sec:rectangles} shows how one incidence matrix can determine several of the point maps at once. For example, when four points are incident with two copies of their six unordered pairs, one permutation of the four points determines both permutations of the pairs.
+
+Section~\ref{sec:order-routes} puts the local maps together through order $23$. It uses published classifications of small coherent configurations and a finite verification in Lean. The appendix lists the cases and states what is verified. At order $24$ we go in the opposite direction. Starting with the adjacency matrix of any graph quantum isomorphic to the standard magic-square graph, we recover its six contexts and their nine incidences. One parity bit determines the graph up to ordinary isomorphism (Theorem~\ref{thm:standard-partners}).
+
+
+\section{From perfect strategies to coherent algebras}\label{sec:transport}
+Take disjoint vertex sets $X=V(G)$ and $Y=V(H)$ of common order $n\ge1$. We express the winning rule \eqref{eq:game-type} in operator form.
+A \emph{projection-valued measurement} on a complex Hilbert space $K$ is a
+family of self-adjoint idempotents $(P_s)_s$ with $P_sP_t=0$ for $s\ne t$
+and $\sum_sP_s=1_K$. A \emph{commuting-operator strategy} consists of a unit
+vector $\xi\in K$ and measurements $(E_{q,s})_s,(F_{q,s})_s$ for Alice and
+Bob at each question $q$. Every $E_{q,s}$ commutes with every $F_{r,t}$.
+The joint probability is $\|E_{q,s}F_{r,t}\xi\|^2$. By \eqref{eq:game-type}, perfection means that this probability vanishes on each pair of inconsistent answers.
+
+A \emph{magic matrix} $U=(u_{xa})$ has projection entries whose rows and
+columns are projection-valued measurements. The matrix characterization of
+the isomorphism game states that $G\cong_{\qc}H$ if and only if some magic matrix over
+a nonzero unital $C^*$-algebra satisfies $A_GU=UA_H$. In the
+finite-dimensional tensor-product model one may take entries in a matrix
+algebra \cite[Thms.~2.4 and 4.4]{LMR}, \cite[Thm.~5.8]{AMRSSV}.
+Here an entry of a scalar matrix multiplying an operator acts as that scalar
+times the identity. We need the relations attached to the \emph{given}
+strategy, including their common choice of colors.
+
+\begin{lemma}[Restriction to the cyclic space]\label{lem:cyclic-restriction}
+Given a perfect strategy, there exists a nonzero closed subspace
+$K_0\subseteq K$ invariant under Alice's measurements on which
+\[
+ u_{xa}=E_{x,a}|_{K_0}=E_{a,x}|_{K_0}
+\]
+forms a magic matrix satisfying
+$u_{xa}u_{yb}=0$ whenever $t_G(x,y)\ne t_H(a,b)$.
+\end{lemma}
+\begin{proof}
+For a question $q$, unequal answers to $(q,q)$ lose. Summing against the other
+player's measurement, on each side in turn, gives
+\[
+ E_{q,s}\xi=E_{q,s}F_{q,s}\xi=F_{q,s}\xi .
+\]
+For questions $x\in X$ and $a\in Y$, whenever Alice answers $a$ the
+equality test forces Bob to answer $x$, and conversely. The same summation
+gives $E_{x,a}\xi=F_{a,x}\xi=E_{a,x}\xi$.
+For any losing pair of moves $i,j$ we therefore have
+$E_iE_j\xi=E_iF_j\xi=0$.
+
+Let $K_0$ be the closed span of the words $E_{i_1}\cdots E_{i_k}\xi$,
+including the empty word. This space contains $\xi$. Induction, commuting the
+last moved Bob operator past each Alice operator, gives
+\[
+ E_{i_1}\cdots E_{i_k}\xi=F_{i_k}\cdots F_{i_1}\xi .
+\]
+Consequently every polynomial $T$ in Alice's operators such that $T\xi=0$
+annihilates these words, hence annihilates $K_0$ by boundedness. Apply this
+to $E_{x,a}-E_{a,x}$ and to each losing product $E_iE_j$. The subspace
+$K_0$ is invariant under each self-adjoint $E_i$, so its restrictions are
+orthogonal projections. Row sums and orthogonality follow from the questions
+in $X$, column sums and orthogonality from the questions in $Y$.
+\end{proof}
+
+\noindent We next record the matrix identity which transmits scalar information through these projections.
+For scalar matrices $M$ on $X$, $N$ on $Y$, call $(M,N)$
+\emph{intertwined by $U$} if $MU=UN$. Row and column orthogonality imply
+$UU^*=I_X$ and $U^*U=I_Y$ as operator-valued matrices. We use the
+following scalar-matrix form of the finite-dimensional adjacency calculation in
+\cite[proof of Thm.~5.8]{AMRSSV}.
+
+\begin{lemma}[Entrywise test]\label{lem:transport-test}
+For any magic matrix $U$,
+\[
+ MU=UN\quad\Longleftrightarrow\quad
+ (M_{xy}-N_{ab})u_{xa}u_{yb}=0
+ \quad(x,y\in X,\ a,b\in Y).
+\]
+\end{lemma}
+\begin{proof}
+For fixed $x,y,a,b$, column and row orthogonality give, respectively,
+\[
+ u_{xa}(MU)_{xb}u_{yb}=M_{xy}u_{xa}u_{yb},
+ \qquad
+ u_{xa}(UN)_{xb}u_{yb}=N_{ab}u_{xa}u_{yb}.
+\]
+For the converse sum the proposed equalities over $a$ and $y$. In order,
+\[
+ \sum_y M_{xy}u_{yb}
+ =\sum_{a,y} M_{xy}u_{xa}u_{yb}
+ =\sum_{a,y} N_{ab}u_{xa}u_{yb}
+ =\sum_a u_{xa}N_{ab}.
+\]
+The first and last steps use a row sum and a column sum, preserving the order of the two factors.
+\end{proof}
+
+The lemma applied to the losing products gives $A_GU=UA_H$.
+For matrices $M,M'$ of the same size, their \emph{Schur product} is
+$(M\circ M')_{xy}=M_{xy}M'_{xy}$. Suppose $MU=UN$ and $M'U=UN'$.
+Then
+\begin{align*}
+ (MM')U&=M(UN')=U(NN'),&
+ M^*U&=UN^*,\\
+ (M\circ M')U&=U(N\circ N'). &&
+\end{align*}
+The adjoint identity follows by taking adjoints in $M=UNU^*$.
+For the Schur identity, a nonzero $u_{xa}u_{yb}$ forces both
+$M_{xy}=N_{ab}$ and $M'_{xy}=N'_{ab}$. Apply
+Lemma~\ref{lem:transport-test} to the products of these two scalars.
+More generally, applying the same scalar function entrywise to intertwined matrices gives another intertwined pair.
+In particular an indicator of a specified two-step count is transported.
+
+We can now construct all the relation matrices that a single strategy must transport.
+The \emph{coherent algebra} $\mathcal C(G)$ is the smallest complex matrix
+algebra on $X$ containing $I,J,A_G$ and closed under adjoints and Schur
+products, where $J$ is the all-ones matrix. Two positions $(x,y),(z,w)$
+have the same \emph{color} when $M_{xy}=M_{zw}$ for every $M\in\mathcal C(G)$.
+A color class $r\subseteq X^2$ is called a \emph{basic relation}. Write
+$R_r(x,y)=\mathbf{1}_{(x,y)\in r}$ for its indicator matrix.
+
+Fix a color $r$. For each $s\ne r$ choose $M_s\in\mathcal C(G)$ whose value on $r$ differs from its value on $s$. Write $M_s(t)$ for its constant value on the color $t$. For an individual vertex pair,
+\begin{equation}\label{eq:color-indicator}
+ R_r(x,y)=\prod_{s\ne r}
+          \frac{M_s(x,y)-M_s(s)}{M_s(r)-M_s(s)} .
+\end{equation}
+If $(x,y)$ has color $r$, every factor is one. If its color is $t\ne r$, the factor with $s=t$ is zero. The empty product is one. Each factor, viewed as a matrix in $(x,y)$, belongs to $\mathcal C(G)$ because $J$ does. Closure under entrywise multiplication therefore gives $R_r\in\mathcal C(G)$. Every matrix in the algebra is constant on each color, so these disjoint indicators form a basis and sum to $J$.
+Transposition permutes these
+basis elements, since adjoints preserve the algebra and the indicators are real.
+Multiplication stays in the algebra, so for basic relations $r,s$,
+\begin{equation}\label{eq:transport-intersection}
+ R_rR_s=\sum_t p_{rs}^tR_t,\qquad
+ p_{rs}^t=\#\{z:(x,z)\in r,\ (z,y)\in s\}\quad ((x,y)\in t).
+\end{equation}
+The constants $p_{rs}^t$ are the \emph{intersection numbers}. The support of $R_rR_s$ is the union of precisely those colors $t$ for which $p_{rs}^t>0$.
+
+As $I$ belongs to the algebra, each color meeting the diagonal lies inside it.
+Its indicator is $D_S=\operatorname{diag}(\mathbf{1}_S)$ for a subset $S$ of
+vertices called a \emph{fiber}. These sets partition $X$.
+Each nonempty $r$ lies in a unique $S\times T$ for fibers $S,T$:
+the matrices $D_SR_rD_T$ partition $R_r$ into zero-one matrices in
+$\mathcal C(G)$, and each is constant on $r$. In general, a \emph{coherent configuration} is a partition of $X^2$ for which the diagonal is a union of parts, transposition permutes the parts, and the counts in \eqref{eq:transport-intersection} are constant on each part $t$. The basic relations just constructed form the coherent configuration of $G$. A configuration with one fiber is \emph{homogeneous}.
+
+For a first example, number the vertices of the path $1$--$2$--$3$ in order. Then
+\[
+ A^2=\begin{pmatrix}1&0&1\\0&2&0\\1&0&1\end{pmatrix},
+ \qquad I\circ A^2=\operatorname{diag}(1,2,1).
+\]
+The center lies in a different fiber from the endpoints. Exchanging the two endpoints fixes $I,J,A$ under conjugation, so it fixes every expression formed from them. Thus no matrix in the coherent algebra splits the diagonal positions at $1$ and $3$. The two fibers are exactly $\{2\}$ and $\{1,3\}$.
+
+\begin{proposition}[Transport for a specified strategy]\label{prop:transport-fibers}
+Each magic matrix $U$ on a nonzero Hilbert space $L$ with $A_GU=UA_H$
+induces a unique complex-linear
+bijection $\Phi:\mathcal C(G)\to\mathcal C(H)$ satisfying
+$MU=U\Phi(M)$. It preserves multiplication, Schur multiplication and adjoints.
+It sends basic relations bijectively to basic relations, preserves all
+intersection numbers, and sends each diagonal indicator $D_S$ to the
+indicator of a fiber $S'$ of the same size.
+\end{proposition}
+\begin{proof}
+Apply identical expressions in $I,J,A$ to $G$ and $H$ with linear
+combinations, the two products and adjoints. The resulting pairs intertwine
+by the preceding identities, since the row and column sums also give $J_XU=UJ_Y$.
+Every element in either coherent algebra is given by such an expression,
+by minimality. For every resulting pair one has $N=U^*MU$ and
+$M=UNU^*$, so the correspondence is well defined and bijective.
+
+The indicators $R_r$ are exactly the minimal nonzero idempotents for Schur
+multiplication. Each Schur idempotent takes values zero and one, constant on
+each color. Thus $\Phi$ permutes the indicators, and comparison of coefficients
+in \eqref{eq:transport-intersection} gives preservation of the $p_{rs}^t$.
+As $\Phi(I)=I$, diagonal relations correspond. The identity $D_SU=UD_{S'}$
+says $(\mathbf{1}_S(x)-\mathbf{1}_{S'}(a))u_{xa}=0$. Hence
+\[
+ |S|\,1_L=\sum_{x\in S,\,a\in S'}u_{xa}=|S'|\,1_L.
+\]
+As $1_L\ne0$, it follows that $|S|=|S'|$.
+\end{proof}
+An \emph{algebraic isomorphism} of coherent configurations is a bijection of basic relations preserving their intersection numbers. It preserves the diagonal, since ordinary matrix multiplication determines its identity. It also preserves transpose, since $r^{\mathsf T}$ is the unique $s$ for which $R_r R_s$ has a nonzero diagonal entry. Lupini, Man\v{c}inska and Roberson prove that quantum isomorphism gives an adjacency-preserving coherent-algebra isomorphism \cite[Cor.~4.7]{LMR}. For fixed graphs, the images of the generators $I,J,A_G$ determine this map. A \emph{point realization} of it is a bijection $f:X\to Y$ such that $R_r(x,y)=\Phi(R_r)(f(x),f(y))$ for every $r,x,y$. Since $A_G$ is a sum of basic relations and $\Phi(A_G)=A_H$, any such $f$ is a graph isomorphism.
+
+\section{Reconstructing a vertex bijection}\label{sec:rectangles}
+\subsection{Extending a map across one fiber}
+Fix a perfect strategy and use the same name for corresponding basic relations in $G$ and $H$. Let $c_G(x,y)$ and $c_H(a,b)$ denote these names. Write $X_i,Y_i$ for the corresponding fibers and call the multiset of sizes $|X_i|$ the \emph{fiber profile}. For a set of fiber indices $L$ put $X_L=\bigsqcup_{i\in L}X_i$, $Y_L=\bigsqcup_{i\in L}Y_i$ and write
+\[
+ \mathcal R(L)\quad\Longleftrightarrow\quad
+ \exists f:X_L\overset{\sim}{\longrightarrow}Y_L\quad
+ \forall x,y\in X_L,\quad c_G(x,y)=c_H(f(x),f(y)).
+\]
+Such a bijection preserves the ambient colors, including distinctions that can disappear in the induced subgraph $G[X_L]$. We refer to $X_i\times X_j$ as a \emph{rectangle} and call it \emph{uniform} if it has just one color. A rectangular relation matrix is extended by zero when used in the full algebra. The following extension arguments use the intersection numbers of the ambient configuration, as in the fiber methods of \cite{FKV,SS}.
+
+\begin{lemma}[Valencies and coprime splitting]\label{lem:split}
+Let $X,Y$ be fibers and $R$ a basic relation in $X\times Y$. Its numbers of ones per row and per column, say $r$ and $s$, are constant. If $|X|=a$, $|Y|=b$ and $g=\gcd(a,b)$, then
+\[
+   ar=bs,\qquad (r,s)=k(b/g,a/g),\qquad 1\le k\le g .
+\]
+In particular at most $g$ basic relations meet this rectangle. If $g=1$, the entire rectangle has one color.
+\end{lemma}
+\begin{proof}
+Writing $B$ for the indicator, $(BB^{\mathsf T})_{xx}$ equals its row sum at $x$ and is constant on the diagonal color of $X$. Use $B^{\mathsf T}B$ for the columns. Double counting gives $ar=bs$. Dividing by $g$ gives the stated divisibility. The sum of the positive integers $k$ over the basic relations in this rectangle is $g$.
+\end{proof}
+If every rectangle between two unions of fibers is uniform, color-preserving bijections on the two unions fit together. Indeed the matrix of any such rectangle is $D_iJD_j$, and its image is the corresponding all-ones rectangle.
+
+\begin{example}
+At profile $(7,9)$ there is just one cross color. The graph across the two fibers is either complete bipartite or empty, with the same alternative in the target. Each magic block restricts to its two induced graphs and intertwines adjacency there. By the known lower bound below $16$ \cite[\S8.5]{Schmidt}, each pair admits a classical graph isomorphism. Their disjoint union settles this profile, with no compatibility check between the two bijections.
+\end{example}
+
+\begin{lemma}[Lifting along a functional relation]\label{lem:functional}
+Let $X,Y$ be distinct fibers and $D$ a union of fibers containing $X$ and disjoint from $Y$. Suppose some basic relation $T\subseteq X\times Y$ has valency one from $X$. Every color-preserving bijection on $D$ extends uniquely to a color-preserving bijection on $D\cup Y$ which preserves $T$.
+\end{lemma}
+\begin{proof}
+Write $T_{xy}=\mathbf{1}_{f(x)=y}$, defining $f:X\to Y$. Its positive constant column valency makes $f$ onto. The target relation gives $f':X'\to Y'$ similarly. Let $h:D\to D'$ realize the given colors. Since $TT^{\mathsf T}$ belongs to the algebra,
+\[
+ f(x)=f(z)\iff (TT^{\mathsf T})_{xz}=1
+          \iff f'(h(x))=f'(h(z)).
+\]
+Hence $k(f(x))=f'(h(x))$ defines a unique bijection $k:Y\to Y'$. For a basic matrix $B$ on $Y\times D$ one has $(TB)_{xz}=B_{f(x),z}$. The entries of $TB$ are preserved by $h$, which gives the desired identity across $Y\times D$. Transposition gives $D\times Y$. For $B$ on $Y\times Y$ use
+$(TBT^{\mathsf T})_{xz}=B_{f(x),f(z)}$. In each step the known bijection acts only on indices in $D$. Surjectivity of $f$ gives the claim on all of $Y$.
+\end{proof}
+\begin{corollary}
+If $1\le |Y|\le3$, every nonuniform rectangle $X\times Y$ contains such a functional relation. Consequently a color-preserving bijection on the complement lifts whenever there is a nonuniform external rectangle. If all external rectangles are uniform, it suffices to realize $Y$ and its complement separately.
+\end{corollary}
+\begin{proof}
+Two or more positive row valencies sum to $|Y|\le3$, so at least one equals one. Apply Lemma~\ref{lem:functional} or the uniform splitting argument.
+\end{proof}
+The hypothesis on the old map ensures that it preserves the equality relation encoded by $TT^{\mathsf T}$.
+
+\begin{lemma}[A single small fiber]\label{lem:single-small}
+An algebraic correspondence on corresponding fibers of size $1,2,3$ or $5$ is realized by a vertex bijection.
+\end{lemma}
+\begin{proof}
+Size one is immediate. In the other cases let $p\in\{2,3,5\}$ be the size. The positive valencies of the off-diagonal colors sum to $p-1$.
+A color of valency one is a permutation matrix $Q$ without fixed points. For each $t\ge1$, the diagonal of $Q^t$ is constant on the fiber, so $Q^t$ fixes either every point or none. Taking $t$ equal to the length of a shortest cycle shows that all cycles have that same length. Primality makes $Q$ a $p$-cycle. Its powers are disjoint permutation matrices in the algebra and cover the whole square. Each is a basic matrix, since its row valency is one. Matching the orbits of $Q$ and its specified image in their cyclic orders realizes every color.
+
+With no off-diagonal valency one there is either a single off-diagonal color or, when $p=5$, two of valency two. In the first case any bijection works. In the second case let $B$ be one indicator. If transposition exchanges the colors, symmetry forces $BB^{\mathsf T}$ to take the same integer value $k$ on both of them. Its diagonal value is two and its row sums are four, so $4=2+4k$, a contradiction. Thus $B$ is symmetric and describes a simple $2$-regular graph on five points, necessarily a $5$-cycle. Any isomorphism between this cycle and its specified image preserves the other color by complementation.
+\end{proof}
+
+\begin{lemma}[Five-point reconstruction]\label{lem:five-frame}
+If $|X_i|=5$ and $i\notin L$, then
+$\mathcal R(L)\Rightarrow\mathcal R(L\cup\{i\})$.
+\end{lemma}
+\begin{proof}
+Write $F=X_i$ and fix a color-preserving bijection $h$ on $X_L$. If every
+rectangle from an old fiber to $F$ is monochromatic, join $h$ to a color-preserving bijection on $F$ from Lemma~\ref{lem:single-small}. Otherwise
+choose an old fiber $Y$ for which $Y\times F$ has more than one color.
+A row valency one gives the result by Lemma~\ref{lem:functional}.
+In the remaining case the positive row valencies sum to five, so they
+are $2$ and $3$. Let $B$ be the indicator of the color of valency two.
+Each row $y\in Y$ gives an edge $e_y$ of the complete graph on $F$.
+
+The equality test $e_y=e_z$ is $(BB^{\mathsf T})_{yz}=2$. Its indicator
+is a union of basic relations on $Y\times Y$, so every represented edge
+occurs with the same multiplicity $\mu>0$. Each point of $F$ lies in
+the same number $b$ of rows, by column regularity of $B$. Hence the
+simple graph on $F$ with edge set $\{e_y:y\in Y\}$ is $(b/\mu)$-regular.
+Its positive degree is even by the handshaking formula. A simple
+$2$-regular graph on five vertices is a pentagon, and degree four gives
+the complete graph. Both contain a pentagon. Label the points by
+$\mathbb Z/5$ and choose rows $y_j$ with $e_{y_j}=\{j,j+1\}$.
+
+The target rows indexed by $h(y_j)$ have the same pairwise intersections,
+because $h$ preserves the entries of $BB^{\mathsf T}$. Consecutive rows
+therefore meet in one point and nonconsecutive rows are disjoint. The
+intersection of target rows $j-1,j$ supplies target point $j$. These five points are distinct because no three selected rows pairwise intersect. In these coordinates the selected rows of $B$ and
+its target image are the same matrix $C=I+P$, where $P_{j,k}=\mathbf{1}_{k=j+1}$
+with indices modulo five. In particular,
+\[
+ C^{-1}=\tfrac12(I-P+P^2-P^3+P^4).
+\]
+For a basic matrix $D$ on $F\times X_L$, the entries of $BD$ with row
+among the $y_j$ give $CD$. For $D$ on $F\times F$, the entries of
+$BDB^{\mathsf T}$ on the selected rows and columns give $CDC^{\mathsf T}$.
+All these entries have both endpoints in $X_L$ and are preserved by $h$.
+Multiply by $C^{-1}$, and on the right by $(C^{\mathsf T})^{-1}$ in the
+second case. This recovers every entry of $D$ in the chosen coordinates. Transposition recovers $X_L\times F$ and completes
+the extension.
+\end{proof}
+Exactly this calculation applies if a color of row valency two on an
+odd fiber of size $m\ge5$ has support edges containing a spanning cycle:
+replace the inverse by $\frac12\sum_{j=0}^{m-1}(-P)^j$. Thus the
+reconstruction requires only a spanning cycle in the support. Five is
+the size at which the required cycle follows from regularity alone
+in the nonuniform, nonfunctional case considered above.
+
+\begin{example}
+Consider the order-$23$ profile $(5,8,10)$. The $8$-by-$5$ rectangle is uniform by Lemma~\ref{lem:split}. Once the region $(8,10)$ has a color-preserving bijection, only its ten-point fiber could impose a constraint on the five-point fiber. If that rectangle is nonuniform, a valency-one relation lifts the given map, or its valencies are $(2,3)$ and the five selected rows of $B$ determine the extension. A uniform rectangle uses Lemma~\ref{lem:single-small}. Thus this three-fiber profile introduces no additional finite case.
+\end{example}
+
+\subsection{When incidence determines several permutations}\label{sec:mixed466}
+Let $S$ be a finite set, let $E(S)=\binom{S}{2}$, and set $N_S(i,e)=\mathbf 1_{i\in e}$. For $|S|=4$ the three edges at a point and the three edges of a triangle have the same pairwise intersection sizes. Indeed $e\mapsto S\setminus e$ interchanges these triples. The incidence matrix $N_S$ retains the common point. The following calculation is the complete-graph case of the hypergraph incidence relations of Faross~\cite[\S4.2]{Faross}.
+
+
+\begin{lemma}\label{lem:mixed-inc}
+Let $S,T$ have the same cardinality $m\ge3$.
+Suppose that magic matrices $U=(u_{ia})_{S\times T}$ and
+$V=(v_{ef})_{E(S)\times E(T)}$ satisfy
+\[
+ U N_T=N_S V,\qquad N_S^{\mathsf T}U=V N_T^{\mathsf T}.
+\]
+Then all entries of $U$ commute and, for $e=\{i,j\}$ and $f=\{a,b\}$,
+\begin{equation}
+ v_{ef}=(u_{ia}+u_{ja})(u_{ib}+u_{jb}).
+ \label{eq:mixed-functor}
+\end{equation}
+\end{lemma}
+\begin{proof}
+For fixed $e$, $u_{ia}+u_{ja}=\sum_{f\ni a}v_{ef}$. All such sums commute
+because they belong to one row of $V$. Likewise, for fixed $f$,
+$u_{ia}+u_{ib}=\sum_{e\ni i}v_{ef}$, and these sums commute in one column of
+$V$. For $i\ne j$, $a\ne b$, let $[P,Q]=PQ-QP$. Expanding gives
+\begin{align*}
+0&=[u_{ia}+u_{ja},u_{ib}+u_{jb}]
+   =[u_{ia},u_{jb}]+[u_{ja},u_{ib}],\\
+0&=[u_{ia}+u_{ib},u_{ja}+u_{jb}]
+   =[u_{ia},u_{jb}]-[u_{ja},u_{ib}].
+\end{align*}
+Adding proves $[u_{ia},u_{jb}]=0$. Pairs in the same row or column
+commute by orthogonality. Multiplying the row sums indexed by $a$ and $b$
+leaves only $v_{e,\{a,b\}}$, proving \eqref{eq:mixed-functor}.
+\end{proof}
+
+\begin{proposition}[Simultaneous point--pair reconstruction]\label{prop:mixed-two-inc}
+Suppose a union of fibers consists of a point set $S$, $|S|=m\ge3$, and one or more distinguished copies of $E(S)$. On each copy suppose its point--pair incidence matrix is a sum of basic relations. Every perfect strategy induces a single vertex bijection on this union that realizes all its inherited colors.
+\end{proposition}
+\begin{proof}
+Let $S'$ correspond to $S$. The image of each incidence matrix has two ones per column. Two of its columns cannot be equal. Indeed, with $M=N_S^{\mathsf T}N_S$ one has $M\circ M-M=2I$ on $E(S)$, since $M_{ef}=|e\cap f|$. The same identity holds in the target by Proposition~\ref{prop:transport-fibers}. Its $\binom m2$ columns therefore list all distinct pairs of $S'$.
+
+Write $U$ for the magic block on $S$ and $V_j$ for the block on the $j$th copy. Lemma~\ref{lem:mixed-inc} shows that all entries of $U$ commute and determines every $V_j$ by the same formula. For a bijection $\sigma:S\to S'$ put $e_\sigma=\prod_{i\in S}u_{i,\sigma(i)}$. Expanding the product of the row sums shows that $\sum_\sigma e_\sigma=1$, since terms with a repeated column vanish. Choose a nonzero $e_\sigma$. On its range $U$ acts by $\sigma$, and every $V_j$ acts by the induced bijection $\{i,k\}\mapsto\{\sigma(i),\sigma(k)\}$. For each basic matrix $R$ between two selected fibers, restrict its intertwining identity to this same range. It becomes the ordinary permutation identity for $R$ and its image. These identities realize every inherited color on the union.
+\end{proof}
+At profile $(4,6,6)$, the proposition handles both six-point fibers at once when both incidences occur. It also applies to such a union inside a larger graph.
+
+\subsection{A common bipartition}
+A different compatibility problem arises when several fibers distinguish the two halves of another fiber $F$. A sign vector $s\in\{1,-1\}^F$ is \emph{balanced} if $\sum_{z\in F}s(z)=0$. Suppose $|F|=2m$ and an incidence matrix $B_X$ from a fiber $X$ to $F$ satisfies
+\[
+                S_X=2B_X-J_{X,F}=t_Xs_X^{\mathsf T},
+\]
+where $J_{X,F}$ is the all-ones rectangle and both sign vectors are balanced. The partition of $F$ into the two signs of $s_X$ is independent of the simultaneous choice of signs of the factors.
+
+\begin{lemma}\label{lem:cuts}
+If $m$ is odd, all such incidences induce the same unordered bipartition of $F$.
+\end{lemma}
+\begin{proof}
+The matrix $Q_X=|X|^{-1}S_X^{\mathsf T}S_X=s_Xs_X^{\mathsf T}$ belongs to the coherent algebra. If the positive halves of $s_X,s_Y$ meet in $b$ points, then $s_X^{\mathsf T}s_Y=4b-2m\ne0$. Since $F$ is one diagonal color,
+\[
+      (Q_X Q_Y)_{zz}=(4b-2m)s_X(z)s_Y(z)
+\]
+is independent of $z\in F$. Hence $s_Y=s_X$ or $s_Y=-s_X$.
+\end{proof}
+
+For instance the factorization is forced on a nonuniform $4\times10$ rectangle. Its two colors have row valency five by Lemma~\ref{lem:split}. For one indicator $B$, let $U_x$ be the support of row $x$, and let $E_k$ mark the pairs $(x,z)$ for which $|U_x\cap U_z|=k$. As an entrywise level set of $BB^{\mathsf T}$, $E_k$ belongs to the algebra and has constant row sum $d_k$. The product $E_kB$ has an integer value $b_k$ on the color $B$. Thus
+\[
+ 5b_k=\sum_{y\in U_x}(E_k B)_{xy}=k d_k .
+\]
+For $1\le k\le4$ this forces $5\mid d_k$, whereas $0\le d_k\le4$. Every row support is therefore equal or complementary to the first one. Column regularity makes the two signs on the four-point side balanced. In profile $(4,4,10)$ both four-point fibers must consequently use the same division of the ten-point fiber.
+
+\section{The lower bound through order twenty-three}\label{sec:order-routes}
+\subsection{Reduction to connected fiber profiles}
+Remove fibers of sizes $1,2,3,5$ and join two remaining indices $i,j$ when $\gcd(|X_i|,|X_j|)>1$. Call the sum of the sizes in a connected component $C$ its \emph{weight} $w(C)$. Two reductions explain why a short list can cover eight different orders.
+
+\begin{proposition}\label{prop:profile-reduce}
+If $\mathcal R(C)$ holds for every component $C$, then the specified color correspondence on the whole graph is realized by one vertex bijection.
+\end{proposition}
+\begin{proof}
+Across different components all rectangles have a single color by Lemma~\ref{lem:split}. The union of the component maps respects these rectangles as well as the internal ones. Attach the five-point fibers successively by Lemma~\ref{lem:five-frame}. For each remaining fiber of size at most three, a nonuniform rectangle from an already realized fiber has a constituent of row valency one. Lemma~\ref{lem:functional} extends the map. If all its rectangles to the realized region are uniform, use Lemma~\ref{lem:single-small} on the fiber itself. Starting with the empty map also covers the case in which every fiber was removed.
+\end{proof}
+
+\begin{proposition}[Component profiles]\label{prop:hand-shapes}
+At order $n\le23$ there is at most one component of weight at least $16$. There are $55$ possible multisets of fiber sizes for such a component over all these orders. Table~\ref{tab:profiles} lists them by weight.
+\end{proposition}
+\begin{proof}
+Two such weights would sum to at least $32$. With all parts even the component is connected, and division by two gives a partition of $w/2$ into parts at least two. For $w=16,18,20,22$ the coefficients of $z^{w/2}$ in $\prod_{j=2}^{11}(1-z^j)^{-1}$ are $7,8,12,14$.
+
+For odd parts first include the singletons $(17),(19),(21),(23)$. In a larger component an odd part must have a neighbor sharing a prime factor. A part $7$ can meet $7$ or $14$, giving $(7,7,7)$ or $(7,14)$ in the required weight range. A part $9$ can meet $6,9,12$. Starting from $(6,9)$ the possible additions within the budget are $(4),(6),(8),(4,4)$, and $(9,9)$ and $(9,12)$ admit no further part. A part $11$ requires another $11$, and $15$ can meet only $6$. No larger odd part has an admissible neighbor within the budget. This gives all the odd-part entries of the table.
+\end{proof}
+
+A single fiber illustrates what the size reduction accomplishes. A homogeneous coherent configuration, also called an association scheme, has just one diagonal color. An algebraic isomorphism of schemes prescribes a particular permutation of their basic relations. At orders $17,20,21,22$, the classification of Ziv-Av has two consequences. Schemes with the same intersection numbers up to renaming are point-isomorphic (a vertex bijection takes their basic relations onto one another), and every algebraic automorphism of such a scheme comes from a point permutation \cite[Tables~2--3 and \S4.2]{ZivAv}. If $g$ induces one isomorphism of color names and $\sigma$ is the desired one, realize $g_*^{-1}\sigma$ by a point automorphism $h$. Then $g\circ h$ realizes $\sigma$.
+
+At $19$ and $23$ the classification also allows rank-three tournament schemes, with basic matrices $I,T,T^{\mathsf T}$ and $T+T^{\mathsf T}=J-I$ \cite[Tables~2--3 and \S4.2]{ZivAv}. Here $T$ orients exactly one arc of each unordered pair. There is a short way to dispose of these schemes even when the fiber sits inside a larger graph.
+\begin{lemma}[A prime fiber larger than its exterior]\label{lem:twins}
+Let $F$ be a fiber of prime size $p$, with fewer than $p$ other vertices. If $G[F]$ is complete or empty, all ordered pairs of distinct vertices in $F$ have the same ambient color.
+\end{lemma}
+\begin{proof}
+Every external fiber has size strictly between $0$ and $p$. By Lemma~\ref{lem:split} its rectangle to $F$ is monochromatic. Thus every permutation of $F$, extended by the identity off $F$, preserves $A_G$. Its conjugation fixes $I,J,A_G$, and hence fixes every matrix in $\mathcal C(G)$. The symmetric group on $F$ is transitive on its ordered pairs of distinct vertices, proving the assertion.
+\end{proof}
+In a rank-three tournament scheme a symmetric zero-diagonal adjacency matrix has the same coefficient on $T$ and $T^{\mathsf T}$, so it is $0$ or $J-I$. Lemma~\ref{lem:twins} then forces a single off-diagonal color, contradicting rank three. Both prime sizes satisfy the exterior bound throughout the present range.
+
+\subsection{Planar tests for color correspondences}\label{sec:tests}
+The obstruction in the multi-fiber case is different. A configuration is \emph{separable} if every algebraic isomorphism from it is induced by a point bijection. A fiber is \emph{thin} if each of its internal basic matrices is a permutation matrix.
+\begin{theorem}[Fuhlbr\"uck--K\"obler--Verbitsky {\cite[Thm.~11.1]{FKV}}]\label{thm:fkv-precise}
+For configurations with fibers of size at most four, every configuration on at most $15$ points is separable. On $16$ points there is exactly one nonseparable configuration up to isomorphism. Its four fibers are thin.
+\end{theorem}
+In the exceptional configuration the interfaces induce all three pair matchings on each four-point fiber \cite[Lem.~5.2 and Fig.~17]{FKV}. Their matrices and the identity already partition its square, which gives the thinness assertion. A color correspondence in this example can preserve all intersection numbers. For it to come from a perfect strategy, it must also preserve the following counts.
+
+
+For finite simple graphs $P,G$, a homomorphism $P\to G$ is a vertex map taking edges to edges. Its number is
+\[
+ \homc(P,G)=\sum_{f:V(P)\to V(G)}\prod_{ij\in E(P)}A_G(f(i),f(j)).
+\]
+A test $P$ is planar if it can be drawn on the sphere with edge interiors disjoint from one another and from all vertices. Counts multiply over components of the test.
+
+\begin{theorem}[Man\v{c}inska--Roberson {\cite[Thm.~7.16]{MR}}]\label{thm:planar-mr}
+For finite simple graphs $G,H$,
+\[
+ G\cong_{\qc}H\quad\Longleftrightarrow\quad
+ \homc(P,G)=\homc(P,H)\quad\text{for every finite planar graph }P .
+\]
+It suffices to use connected planar tests.
+\end{theorem}
+
+The forward implication has a useful matrix explanation. For $U=(u_{xa})$, set $U^{[0]}=1$ and $U^{[k]}_{\mathbf x,\mathbf a}=u_{x_1a_1}\cdots u_{x_ka_k}$ in this order. Row and column orthogonality, applied from the innermost factors outwards, make these matrices unitary. On $\mathbb C^X$ put $\eta_X(1)=\sum_x e_x$ and $m_X(e_x\otimes e_y)=\mathbf1_{x=y}e_x$. Then
+\[
+ A_GU=UA_H,\qquad \eta_X=U\eta_Y,\qquad m_XU^{[2]}=Um_Y.
+\]
+The last identity is $u_{xa}u_{xb}=\mathbf1_{a=b}u_{xa}$. These intertwining identities persist under composition, adjoint and ordered tensor product. In a planar drawing, place $A$ on the edges and use $m,m^*,\eta,\eta^*$ to identify and sum the incident vertex indices. The planar generation theorem \cite[Thm.~6.7]{MR} gives precisely such contractions. The closed expression is a scalar, hence has the same value in both graphs. A crossing would insert the tensor flip and require $u_{ya}u_{xb}=u_{xb}u_{ya}$, beyond the magic-matrix relations. For the reverse implication, Man\v{c}inska and Roberson use rooted planar tests to recover the quantum orbits of a graph. Two vertices lie in a common quantum orbit if a magic matrix commuting with its adjacency matrix has a nonzero entry between them. Applied to the disjoint union of $G$ and $H$, this gives the converse \cite[\S\S6--7]{MR}.
+
+The same principle applies to specified colors. A binary test has variables $V(P)$ and ordered edges $e=(i,j)$ with labels $r_e$. Its incidence graph joins each edge occurrence to its two arguments. For a family $B=(B_r)$ of relation matrices on a finite set $D$ write
+\[
+ Z(P,B)=\sum_{f:V(P)\to D}\prod_{e=(i,j)}B_{r_e}(f(i),f(j)).
+\]
+\begin{theorem}[Cai--Young, planar invariance {\cite[Thm.~9]{CY}}]\label{thm:planar-colors}
+Suppose a magic matrix transports each relation $B_r$ to $B'_{\sigma(r)}$ on the corresponding domain. For every binary test with planar incidence graph, $Z(P,B)=Z(P,(B'_{\sigma(r)})_r)$.
+\end{theorem}
+Indeed, Lemma~\ref{lem:transport-test} gives $(B_r(x,y)-B'_{\sigma(r)}(a,b))u_{xa}u_{yb}=0$. Summing over $a,b$ gives the binary intertwining equation in the cited theorem. An unequal count therefore rules out the proposed correspondence $\sigma$. For a union of fibers, the corresponding block of $U$ is magic by Proposition~\ref{prop:transport-fibers}.
+
+\begin{proposition}[Planar tests for thin fibers]\label{prop:thin-planar}
+Let $D=\bigsqcup_{i=1}^m X_i$ be a union of thin fibers and let $D'=\bigsqcup_i X'_i$ be its image under the color correspondence of a fixed magic matrix. Form a simple graph $L$ on $\{1,\ldots,m\}$, putting $ij$ in $E(L)$ when $i\ne j$ and $X_i\times X_j$ has at least two colors. If $L$ is planar, the correspondence on all of $D$ is induced by one bijection $D\to D'$.
+\end{proposition}
+\begin{proof}
+Choose $x_i\in X_i$ for each $i$. Orient the edges of $L$ arbitrarily and assign to $ij$ the color of $(x_i,x_j)$. To force the image of vertex $i$ into the correct fiber, attach a new leaf to $i$ by an edge labeled by the diagonal relation of $X_i$. This relation counts exactly one possible leaf value when the image lies in $X_i$ and zero otherwise. The resulting instance is planar and has a solution in $D$. Theorem~\ref{thm:planar-colors} gives a solution in the target. Write $x'_i$ for its images of the original vertices. Then
+\[
+                    c_G(x_i,x_j)=c_H(x'_i,x'_j)\qquad(1\le i,j\le m)
+\]
+in corresponding names. The specified edges give these equalities in one direction and transposition gives the reverse. A rectangle for a missing edge has a single color, and the leaf conditions give the diagonal equalities.
+
+For $x\in X_i$ let $Q_x$ be the basic matrix containing $(x_i,x)$, and $Q'_x$ its image. Each is a permutation matrix on its fiber. Define $f(x)$ by $Q'_x(x'_i,f(x))=1$. For a fixed $i$, the matrices $Q_x$ range over all internal basic matrices, exactly once, as $x$ ranges over $X_i$. Their images partition the row at $x'_i$, hence $f$ maps $X_i$ bijectively onto $X'_i$. For a basic matrix $R$ on $X_i\times X_j$ and its image $R'$,
+\[
+ R(x,y)=(Q_x RQ_y^{\mathsf T})(x_i,x_j)
+       =(Q'_x R'(Q'_y)^{\mathsf T})(x'_i,x'_j)
+       =R'(f(x),f(y)).
+\]
+The middle equality holds because the transported product is a linear combination of corresponding basic matrices with the same coefficients. This proves the simultaneous assertion on every rectangle.
+\end{proof}
+
+In particular, in a $16$-point region with fibers of size at most four, a quantum-induced correspondence is always realized on points. Apply separability from Theorem~\ref{thm:fkv-precise} or, in its unique exception, Proposition~\ref{prop:thin-planar} with $L\subseteq K_4$. More generally, a failure of point realization on a union of thin fibers requires a nonplanar graph of nonuniform rectangles, hence at least five fibers. This is a restriction on a specified correspondence and makes no assumption on the ambient order.
+
+For a numerical example that can be checked on paper, take two eight-point fibers with coordinates $(a,e)\in\mathbb F_2^2\times\mathbb F_2$ on each. Write $B(a,b)=a_1b_2+a_2b_1$. In one of the configurations in Table~\ref{tab:profiles}, the cross color being tested means $e+f=B(a,b)$, and an internal edge of specified color fixes the nonzero increment of its first coordinate. Take a $K_4$ test with two vertices in each fiber and require all four cross edges to have this cross color. If the internal increments are $\alpha,\beta$, the four cross equations are
+\[
+ \begin{aligned}
+ e+f&=B(a,b),              & e+f'&=B(a,b+\beta),\\
+ e'+f&=B(a+\alpha,b), & e'+f'&=B(a+\alpha,b+\beta).
+ \end{aligned}
+\]
+Their sum requires $B(\alpha,\beta)=0$. Conversely, under that condition $a,b,e$ are free, the first three equations determine $f,f',e'$, and the fourth follows. The count is $32\,\mathbf 1_{B(\alpha,\beta)=0}$. The given colors specify $\alpha=\beta=(1,0)$ and give $32$ maps. A candidate renaming specifies $\alpha=(1,1)$, $\beta=(0,1)$ and gives zero. Theorem~\ref{thm:planar-colors} excludes that renaming.
+
+\subsection{Completing the lower bound}
+Fix $16\le n\le23$ and the correspondence induced by a perfect strategy. After Proposition~\ref{prop:profile-reduce}, components of weight at most $15$ are covered by the small-configuration classification and its finite realization checks \cite[\S2.1]{ZivAv}. These use the colors inherited from $G$, which a graph isomorphism of the smaller induced graph alone need not preserve.
+
+For a component of weight at least $16$, Proposition~\ref{prop:hand-shapes} puts its profile in Table~\ref{tab:profiles}. The finite verification stated in the appendix yields a realization of its inherited colors in the unmarked cases. The three marked profiles of weight $22$ give a bijection preserving adjacency and fiber membership on those vertices. At most one vertex is left. Its rectangles are monochromatic, so the bijection extends to a graph isomorphism. In the marked profile $(23)$ the component is the entire graph. The homogeneous classification and Lemma~\ref{lem:twins} apply directly. Every other component map extends by Proposition~\ref{prop:profile-reduce}. This proves $G\cong_{\qc}H\Rightarrow G\cong H$ for these eight orders. Schmidt's bound covers $n<16$. It remains to attain $24$.
+
+\section{The magic-square graphs at order twenty-four}\label{sec:boundary}
+\subsection{The extremal pair from six parity constraints}\label{sec:upper}
+Let $R_0,R_1,R_2$ and $C_0,C_1,C_2$ be the three rows and three columns of a
+square. A \emph{context} is one of these six sets of cells. For
+$b\in\{0,1\}$ prescribe a sign $\epsilon_b(D)$ to each context $D$:
+all signs are positive except $\epsilon_b(C_2)=(-1)^b$. Put
+\[
+ \Omega_b(D)=\left\{s:D\to\{\pm1\}:\prod_{v\in D}s(v)=\epsilon_b(D)\right\}.
+\]
+The \emph{conflict graph} $G_b$ has vertices $(D,s)$ with $s\in\Omega_b(D)$.
+Two vertices $(D,s),(E,t)$ are adjacent if
+$s(v)\ne t(v)$ for some $v\in D\cap E$.
+Thus each context induces a four-clique. Distinct rows are disjoint, as
+are distinct columns. Each row meets each column once. Atserias et al.\
+associate such graphs to linear binary constraint systems and prove the
+classical and quantum satisfiability criteria \cite[Thms.~6.2--6.4]{AMRSSV}.
+Their example after Theorem~6.4 is this square. We derive its vertex
+counts and operator matrix explicitly.
+
+\begin{proposition}[The order-$24$ pair]\label{prop:upper}
+The graphs $G_0$ and $G_1$ each have $24$ vertices and degree nine.
+Their independence numbers are $6$ and $5$, respectively. There is a
+perfect graph isomorphism strategy on $\mathbb C^4\otimes\mathbb C^4$.
+\end{proposition}
+\begin{proof}
+Prescribing two signs in a context determines the third, so its
+contribution is four vertices. A vertex has three neighbors in its own
+context and two neighbors in each of the three contexts intersecting it.
+
+An \emph{independent set} is a set of pairwise nonadjacent vertices, and its maximum size is the independence number. An independent six-set must select exactly one assignment per context.
+Agreement on the common cells makes these six assignments the restrictions
+of one array $(s_{ij})$. For $b=0$, the upper left $2\times2$ array is free:
+if its entries are $a,b',c,d$ in row order, the full array is
+\[
+ \begin{pmatrix}
+ a&b'&ab'\\c&d&cd\\ac&b'd&ab'cd
+ \end{pmatrix}.
+\]
+There are exactly $16$ independent six-sets. For $b=1$, global agreement
+would imply
+\[
+ 1=\prod_{i=0}^2\prod_{j=0}^2s_{ij}
+   =\prod_{j=0}^2\epsilon_1(C_j)=-1 .
+\]
+The all-positive assignments on the three rows and the first two columns
+give an independent five-set in $G_1$.
+
+For the quantum strategy let $I=I_2$ and put
+\[
+ X=\begin{pmatrix}0&1\\1&0\end{pmatrix},\qquad
+ Z=\begin{pmatrix}1&0\\0&-1\end{pmatrix},\qquad
+ (O_{ij})=\begin{pmatrix}
+ Z\otimes I&I\otimes Z&Z\otimes Z\\
+ I\otimes X&X\otimes I&X\otimes X\\
+ Z\otimes X&X\otimes Z&-ZX\otimes ZX
+ \end{pmatrix}.
+\]
+All nine matrices are traceless self-adjoint involutions. Each context
+consists of commuting matrices and its product is
+$\epsilon_1(D)I_4$. In the last row the first two entries multiply to
+$ZX\otimes XZ=-ZX\otimes ZX$. In the last column the product of the
+first two is $ZX\otimes ZX$, which accounts for the negative sign.
+Both calculations use $XZ=-ZX$.
+
+For $\eta\in\Omega_1(D)$ define the joint spectral projection
+\[
+ E_D(\eta)=\prod_{v\in D}\frac{I_4+\eta(v)O_v}{2}.
+\]
+In any ordering $D=\{u,v,w\}$, $O_w=\epsilon_1(D)O_u O_v$. The first two
+spectral conditions therefore imply the third, and
+\begin{equation}\label{eq:upper-eigen}
+ E_D(\eta)=\tfrac14\big(I_4+\eta(u)O_u+\eta(v)O_v
+                              +\eta(u)\eta(v)O_uO_v\big).
+\end{equation}
+The three nonscalar terms have trace zero, so every $E_D(\eta)$ has trace
+and rank one. Different $\eta$ in one context give orthogonal projections,
+and summing \eqref{eq:upper-eigen} over the two independent signs gives $I_4$.
+
+For $(D,s)\in G_0$ and $(E,t)\in G_1$ put
+\[
+ P_{(D,s),(E,t)}=
+ \begin{cases} E_D(st),&D=E,\\ 0,&D\ne E,\end{cases}
+ \qquad (st)(v)=s(v)t(v).
+\]
+For fixed $s$, translation $t\mapsto st$ permutes $\Omega_1(D)$. For fixed $t$, it is $s\mapsto st$ that bijects $\Omega_0(D)$ with $\Omega_1(D)$.
+Thus the four nonzero projections in any row or column are orthogonal and sum to $I_4$.
+In particular the $24\times24$ operator matrix has $96$ nonzero blocks.
+
+To check the game, take two nonzero entries $P=E_D(st)$ and $Q=E_E(s't')$.
+If $D=E$, a mismatch of equality forces $PQ=0$ by row or column
+orthogonality. In a single context all distinct vertices are adjacent. If
+the contexts are disjoint both pairs consist of nonadjacent vertices. It
+remains to consider $D\cap E=\{v\}$. A mismatch of adjacency means
+$s(v)s'(v)=-t(v)t'(v)$, or equivalently $s(v)t(v)=-s'(v)t'(v)$. Writing
+$e_{\pm}=(I_4\pm O_v)/2$ and $\delta=s(v)t(v)$ gives
+\[
+                 PQ=(P e_{\delta})(e_{-\delta}Q)=0.
+\]
+Here each joint spectral projection is supported on its indicated eigenspace of $O_v$.
+
+Use the unit vector $\psi=\tfrac12\sum_{i=1}^4e_i\otimes e_i$. For a
+source question Alice uses its row of $P$, and for a target question she
+uses its column. Bob uses the transposes of the corresponding projections.
+The joint probability for a pair of outcomes represented by $P,Q$ is
+\[
+ \langle\psi,(P\otimes Q^{\mathsf T})\psi\rangle
+   =\tfrac14\sum_{i,j}P_{ij}Q_{ji}=\tfrac14\operatorname{Tr}(PQ).
+\]
+Every losing pair has probability zero. This proves the finite-dimensional
+upper bound and completes the proof of Theorem~\ref{thm:main}.
+\end{proof}
+
+\begin{corollary}[Sharp range of planar homomorphism counts]\label{cor:threshold}
+For fixed $n$, the numbers $\homc(P,G)$, with $P$ ranging over finite planar graphs, determine every $n$-vertex simple graph $G$ up to isomorphism if and only if $n\le23$.
+\end{corollary}
+\begin{proof}
+For $n\le23$ this is Theorems~\ref{thm:main} and~\ref{thm:planar-mr}. For $n=24+k$, adjoin $k$ isolated vertices to each of $G_0,G_1$. An isomorphism would restrict to one on the vertices of degree nine, which is impossible by Proposition~\ref{prop:upper}. A connected planar test with an edge maps into the original graph, and a single isolated test vertex has $24+k$ possible images on either side. Equality on connected tests and multiplication over components give equality on all planar tests.
+\end{proof}
+
+One nonplanar test already distinguishes $G_0$ from $G_1$. Put $D=K_{3,3}$ on the six contexts and write the nine cells as its edges. Group homomorphisms $D\to G_b$ by the contexts of their six images. Flipping a cell bit at both ends preserves all adjacencies and toggles the two corresponding context parities. Along a path the interior toggles cancel. If one cell is unused by test edges crossing between contexts, move the odd parity to one endpoint of that cell and flip its bit at that endpoint alone. This bijects the two sets of lifts of the given context map, since it preserves comparisons within each context and across every used cell.
+
+If all nine cells occur, the nine test edges hit them bijectively and the context map is an automorphism of $D$. There are $2(3!)^2$ choices. For each, a row-end bit $z_e$ forces the column-end bit $z_e+1$. With $p$ the prescribed context parities and $C$ the set of three columns, the equations are $\partial z=p+\mathbf 1_C$ over $\mathbb F_2$, where $\partial$ is the vertex--edge incidence matrix of $D$. Path sums show that its image is the even-sum subspace, of dimension five. The equations have $2^{9-5}$ solutions for $b=1$ and none for $b=0$. Consequently
+\[
+      \homc(K_{3,3},G_1)-\homc(K_{3,3},G_0)=2(3!)^2\,2^{9-5}=1152 .
+\]
+
+\subsection{The symmetries of the square}
+The graphs also admit a description on the $24$ permutations of four letters. For a finite group $L$ and an inverse-closed subset $S\subset L$ omitting the identity, the Cayley graph $\operatorname{Cay}(L,S)$ has edges $g\sim h$ when $g^{-1}h\in S$. In $S_4$ let $T_2,T_{22},T_4$ be the transpositions, the products of two disjoint transpositions, and the four-cycles, respectively. The identification of Man\v{c}inska and Roberson \cite[\S8.2]{MR} is
+\[
+ G_0\cong\operatorname{Cay}(S_4,T_{22}\cup T_4),\qquad
+ G_1\cong\operatorname{Cay}(S_4,T_{22}\cup T_2).
+\]
+Left multiplication accounts for $24$ automorphisms of either graph. To find all of them, we must recognize the six contexts from adjacency alone.
+
+Write $A$ for the adjacency matrix of $G_b$. Two distinct vertices in one context agree in exactly one cell. They have four common neighbors, namely the two remaining vertices in their own context, and two vertices in the opposite context of that cell. Two adjacent vertices from different contexts have only two common neighbors. In each endpoint context exactly one other assignment agrees with the local endpoint on the shared cell and hence conflicts with the opposite endpoint. No third context meets both. Thus the indicator of lying in the same context is
+\[
+                   E=I+A\circ\mathbf{1}_{A^2=4},
+\]
+where the indicator is taken entrywise. This formula forces every ordinary automorphism to permute the six contexts. Write $C_2$ for the cyclic group of order two and $S_3$ for the permutations of three objects.
+\begin{proposition}[The two ordinary automorphism groups]\label{cor:ordinary-square}
+Let $W=(S_3\times S_3)\rtimes C_2$, with $C_2$ exchanging the factors. Let $K$ consist of the binary $3\times3$ arrays with even row and column sums. The group $W$ acts on $K$ by permuting rows and columns and transposing. For $b=0,1$,
+\[
+ \operatorname{Aut}(G_b)\simeq K\rtimes W,\qquad
+ K\simeq (C_2)^4,\qquad |\operatorname{Aut}(G_b)|=16\cdot72=1152 .
+\]
+\end{proposition}
+\begin{proof}
+The relation $E$ recovers the six contexts, and their quotient under cross-context adjacency is $K_{3,3}$. Each automorphism induces an element of $W=\operatorname{Aut}(K_{3,3})$. In the kernel, a permutation of one context preserves each of its three bit partitions and hence changes its three coordinates by fixed flips. Flips at opposite ends of a cell agree since adjacency there is disagreement. At each context the three flips sum to zero. Conversely every array in $K$ acts by such flips. Its upper-left $2\times2$ subarray determines it freely.
+
+It remains to lift $W$. Write signs as bits in $\mathbb F_2$. Flipping a cell bit at both endpoints preserves conflict and toggles the parities of its two contexts. The sum of flips along a path toggles just the endpoints. Hence any two parity patterns with the same total sum give isomorphic graphs. Use the pattern zero at the rows and $b$ at the three columns. A permutation $w\in W$ permutes contexts and their cells. If $w$ exchanges the two shores, also add $b$ to every cell bit at both endpoints. This adds $3b=b$ to each local parity, exactly the correction required on exchanging shores. The indicator of shore exchange is a homomorphism $W\to C_2$ and the all-ones array is invariant. The displayed lifts consequently form a group section and conjugate $K$ by the asserted coordinate action.
+\end{proof}
+
+This description gives another regular action on the same $24$ vertices. A regular action is transitive with trivial vertex stabilizers. Index the square by $(i,j)\in(\mathbb Z/3)^2$ in the parity coordinates of the proof. Take the bit flips $h_{i+j}$ with $h_0+h_1+h_2=0$ in $\mathbb F_2$. These four flips act regularly on the four assignments in each context. The simultaneous shift $(i,j)\mapsto(i+1,j+1)$ cycles the three nonzero flips. The lifted transposition of rows and columns commutes with the shift and with all four flips. The shift and transposition together act regularly on the six contexts. Thus the resulting group acts regularly on the vertices and is isomorphic to $A_4\times C_2$, where $A_4$ is the alternating group on four letters. Indeed the identity and the three double transpositions in $A_4$ form a four-group on whose nonidentity elements a three-cycle acts cyclically.
+
+\subsection{All quantum-isomorphic partners of the square}
+An ordinary automorphism preserves the six contexts. A quantum-isomorphic graph is given to us without any designated contexts. The matrix that recovered them inside $G_0$ will identify them in this unknown graph as well.
+
+\begin{theorem}[The quantum-isomorphism class of the magic square]\label{thm:standard-partners}
+For every finite simple graph $H$,
+\[
+ H\cong_{\qc}G_0 \quad\Longleftrightarrow\quad H\cong_{\qf}G_0
+ \quad\Longleftrightarrow\quad
+               \bigl(H\cong G_0\ \text{or}\ H\cong G_1\bigr).
+\]
+\end{theorem}
+\begin{proof}
+The explicit strategy in Proposition~\ref{prop:upper} gives the implication from the last condition to the second, which implies the first. Suppose $H\cong_{\qc}G_0$. We recover the contexts of $H$ first and then the binary assignments within each context.
+
+For $A=A_{G_0}$ let $E=I+A\circ\mathbf{1}_{A^2=4}$ as above, and put
+\[
+             D=\tfrac18(EAE-12E),\qquad T=A-E+I.
+\]
+The matrix $D$ indicates that the two contexts share a cell. Indeed a diagonal context block contains twelve ordered adjacent pairs, an intersecting pair of contexts has eight edges between them, and disjoint contexts have none. The matrix $T$ records the edges between different contexts. Counting neighbors in the square gives
+\begin{equation}\label{eq:recover-square}
+ E^2=4E,\qquad AE=3E+2D,\qquad
+ D^2=12(J-D),\qquad E\circ T^2=4I+2E .
+\end{equation}
+For example, two contexts on the same shore of the row--column graph have all three opposite contexts as common neighbors. This gives the twelve in $D^2$. Within a context, a vertex has six neighbors outside and two distinct vertices have two common outside neighbors, giving the last identity.
+
+The $K_1$ test gives $|V(H)|=24$. Use the same formulas for $E,D,T$ with $A=A_H$. Proposition~\ref{prop:transport-fibers} transports \eqref{eq:recover-square}, including entrywise indicators, which are polynomials in the entries on their finite set of values. It also transports symmetry, the zero--one entries of $E,D,T$, and the inclusions $I\le E$, $E-I\le A$, $E\circ D=0$. For zero--one matrices support inclusion $M\le N$ means $M\circ N=M$. In $H$, the equalities $E_{xx}=1$ and $E^2=4E$ say that every row support has size four, and that two supports coincide whenever their vertices are joined by $E$. Thus the $24$ vertices of $H$ partition into six four-cliques. The formula for $D$ makes it constant on the rectangles between them. Its six-by-six quotient $B$ satisfies $B^2=3(J_6-B)$. Hence $B$ is the adjacency matrix of a cubic triangle-free graph. The three neighbors of any vertex are independent and must all meet the other two vertices, giving $K_{3,3}$.
+
+On each of the nine nonempty rectangles, $AE=3E+2D$ gives two neighbors per vertex on either side. The bipartite graph on the rectangle is an eight-cycle or two disjoint four-cycles. Let $t$ of the nine rectangles have the latter form, and let $c_4(H)$ be the number of unordered four-cliques. A four-clique meeting several contexts can use only two of them because the context graph is bipartite. Each vertex has only two neighbors across a rectangle, so the split must be two plus two. It then spans a four-cycle in their rectangle. Since $K_4$ is planar and every map from it to a simple graph is injective on its four vertices, Theorem~\ref{thm:planar-mr} gives
+\[
+     6+2t=c_4(H)=\frac{\homc(K_4,H)}{4!}
+                 =c_4(G_0)=6+2\cdot9 .
+\]
+Here each rectangle of $G_0$ tests disagreement in one bit, so all nine are unions of two four-cycles. Hence $t=9$ in $H$ as well.
+
+Each adjacent context now divides a given four-clique into two pairs with identical neighbors across that rectangle. Two distinct vertices in the clique have exactly two common outside neighbors by \eqref{eq:recover-square}, so they belong to the same pair in exactly one of the three divisions. The three divisions are therefore precisely the three pair partitions of four points. Label their parts by bits, choosing labels across each cell so that an edge means unequal bits. Two distinct vertices in a context receive triples differing in exactly two coordinates. Its four vertices thus give the four distinct triples of one prescribed parity.
+
+Flipping the bit at both ends of a cell preserves all adjacencies and changes the parities at its two endpoint contexts. Along a path the interior changes cancel. Since $K_{3,3}$ is connected, these flips can carry any even number of odd parities to zero, or leave a single odd parity in the last column when their number is odd. The resulting patterns give $G_0$ and $G_1$. Their independence numbers are respectively six and five by Proposition~\ref{prop:upper}, so they represent two distinct ordinary isomorphism classes.
+\end{proof}
+
+\clearpage
+\appendix
+\section{Fiber profiles and formal verification}\label{app:finite}
+Table~\ref{tab:profiles} gives the connected fiber profiles of weight $w\ge16$ after the reductions of Proposition~\ref{prop:profile-reduce}. The ambient graph may have up to $23-w$ further vertices. Write $a^k$ for $k$ distinct fibers of size $a$.
+\begin{center}
+\begin{minipage}{\linewidth}
+\small
+\refstepcounter{table}\label{tab:profiles}
+\centering\textsc{Table \thetable.} Connected profiles of weight $16$ through $23$.\par\smallskip
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}rrl@{}}
+\toprule
+Weight & Number & Fiber sizes \\
+\midrule
+16 & 7 & $(4^4),\;(4^2,8),\;(4,6^2),\;(4,12),\;(6,10)$ \\
+ &  & $(8^2),\;(16)$ \\
+\addlinespace[2pt]
+17 & 1 & $(17)$ \\
+\addlinespace[2pt]
+18 & 9 & $(4^3,6),\;(4^2,10),\;(4,6,8),\;(6^3),\;(4,14)$ \\
+ &  & $(6,12),\;(8,10),\;(9^2),\;(18)$ \\
+\addlinespace[2pt]
+19 & 2 & $(4,6,9),\;(19)$ \\
+\addlinespace[2pt]
+20 & 12 & $(4^5),\;(4^3,8),\;(4^2,6^2),\;(4^2,12)$ \\
+ &  & $(4,6,10),\;(4,8^2),\;(6^2,8),\;(4,16),\;(6,14)$ \\
+ &  & $(8,12),\;(10^2),\;(20)$ \\
+\addlinespace[2pt]
+21 & 6 & $(6^2,9),\;(7^3),\;(6,15),\;(7,14),\;(9,12),\;(21)$ \\
+\addlinespace[2pt]
+22 & 15 & $(4^4,6),\;(4^3,10),\;(4^2,6,8),\;(4,6^3)$ \\
+ &  & $(4^2,14),\;(4,6,12),\;(4,8,10),\;(6^2,10),\;(6,8^2)^\dagger$ \\
+ &  & $(4,18),\;(6,16)^\dagger,\;(8,14)^\dagger,\;(10,12),\;(11^2),\;(22)$ \\
+\addlinespace[2pt]
+23 & 3 & $(4^2,6,9),\;(6,8,9),\;(23)^\dagger$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{center}
+\noindent The unmarked profiles give bijections preserving the inherited colors, in the ambient range $16\le n\le23$. A dagger marks the four cases in which the lower bound uses an ordinary graph isomorphism as explained in Section~\ref{sec:order-routes}. Components of weight at most $13$ use the small-configuration census. At weights $14$ and $15$ the possible connected profiles are $(14),(4,10),(6,8),(7,7),(4^2,6)$ and $(15),(6,9)$, respectively.
+
+\smallskip
+\noindent\emph{Finite verification.} For each profile, the formalization applies the structural reductions and places residual configurations in finite families, using published classifications where required. On the resulting relation matrices it accounts for the permitted permutations of colors. A permutation is realized by a common vertex map or excluded by a failed invariant, including the planar test of Theorem~\ref{thm:planar-colors}. The marked cases use the adjacency conclusion stated above. Lean~4.19 verified the lower bounds for $16,\ldots,23$ and the final theorem \texttt{QGI.exactMinimum24}, using native evaluation for finite checks. The verification uses twenty external mathematical statements concerning the small-order bound and classifications \cite{Schmidt,FKV,ZivAv,HM,HData,SS,SH}, transport and planar counts \cite{LMR,Meunier,MR,CY}, and quantum automorphisms of small graphs \cite{BB,SP,SDT}. The construction in Proposition~\ref{prop:upper} is also formalized. The accompanying archive \texttt{QuantumGraph24-Lean.zip} contains the Lean sources, finite data and pinned toolchain specification. Its \texttt{Verify.lean} states the eight separate conclusions and the quantified minimum-order theorem.
+
+\smallskip
+\noindent\emph{Use of AI tools.} ChatGPT and AI-assisted coding tools were used in developing and reviewing mathematical arguments, preparing the Lean formalization and numerical checks, and drafting and revising the manuscript.
+
+\begin{thebibliography}{99}
+\bibitem{AMRSSV} A. Atserias, L. Man\v{c}inska, D. E. Roberson, R. \v{S}ámal, S. Severini and A. Varvitsiotis, Quantum and non-signalling graph isomorphisms, \emph{J. Combin. Theory Ser. B} \textbf{136} (2019), 289--328. \href{https://doi.org/10.1016/j.jctb.2018.11.002}{doi:10.1016/j.jctb.2018.11.002}. Internal numbering follows \href{https://arxiv.org/abs/1611.09837v3}{arXiv:1611.09837v3}.
+\bibitem{BB}
+T.~Banica and J.~Bichon,
+Quantum automorphism groups of vertex-transitive graphs of order $\le 11$,
+\emph{J. Algebraic Combin.} \textbf{26} (2007), 83--105.
+\href{https://doi.org/10.1007/s10801-006-0049-9}{doi:10.1007/s10801-006-0049-9}.
+\bibitem{CY} J.-Y. Cai and B. Young, Planar \#CSP equality corresponds to quantum isomorphism---a Holant viewpoint, \emph{ICALP 2023}, LIPIcs \textbf{261} (2023), 33:1--33:17. \href{https://doi.org/10.4230/LIPIcs.ICALP.2023.33}{doi:10.4230/LIPIcs.ICALP.2023.33}.
+\bibitem{Faross} N. Faross, Quantum automorphism groups of hypergraphs, \emph{Canadian Mathematical Communications} \textbf{1} (2026), e5. \href{https://doi.org/10.4153/S2976859426100046}{doi:10.4153/S2976859426100046}.
+\bibitem{FKV}
+F.~Fuhlbr\"uck, J.~K\"obler and O.~Verbitsky,
+Identifiability of graphs with small color classes by the Weisfeiler--Leman algorithm, \emph{SIAM J. Discrete Math.} \textbf{35} (2021), 1792--1853. \href{https://doi.org/10.1137/20M1327550}{doi:10.1137/20M1327550}; full version \href{https://arxiv.org/abs/1907.02892v3}{arXiv:1907.02892v3} (2020).
+\bibitem{HData}
+A.~Hanaki, Classification of small association schemes, version 1,
+Zenodo (2020), \href{https://doi.org/10.5281/zenodo.3627736}{doi:10.5281/zenodo.3627736}.
+\bibitem{HM}
+A.~Hanaki and I.~Miyamoto, Classification of association schemes
+with 16 and 17 vertices, \emph{Kyushu J. Math.} \textbf{52} (1998), 383--395,
+\href{https://doi.org/10.2206/kyushujm.52.383}{doi:10.2206/kyushujm.52.383};
+Classification of association schemes with 18 and 19 vertices,
+\emph{Korean J. Comput. Appl. Math.} \textbf{5} (1998), 543--551,
+\href{https://doi.org/10.1007/BF03008881}{doi:10.1007/BF03008881}.
+\bibitem{LMR} M. Lupini, L. Man\v{c}inska and D. E. Roberson, Nonlocal games and quantum permutation groups, \emph{J. Funct. Anal.} \textbf{279} (2020), 108592. \href{https://doi.org/10.1016/j.jfa.2020.108592}{doi:10.1016/j.jfa.2020.108592}.
+\bibitem{MR} L. Man\v{c}inska and D. E. Roberson, Quantum isomorphism is equivalent to equality of homomorphism counts from planar graphs, \emph{Proc. 61st IEEE Symposium on Foundations of Computer Science} (2020), 661--672, \href{https://doi.org/10.1109/FOCS46700.2020.00067}{doi:10.1109/FOCS46700.2020.00067}. Theorem numbers refer to the full version \href{https://arxiv.org/abs/1910.06958}{arXiv:1910.06958}.
+\bibitem{Meunier}
+P.~Meunier, Quantum properties of $\mathcal F$-cographs,
+\href{https://arxiv.org/abs/2312.01516v2}{arXiv:2312.01516v2} (2023, revised 2024).
+\bibitem{Schmidt} S. Schmidt, \emph{Quantum Automorphism Groups of Finite Graphs}, doctoral dissertation, Saarland University, 2020. \href{https://d-nb.info/1216104816/34}{Dissertation}.
+\bibitem{SP}
+S.~Schmidt, The Petersen graph has no quantum symmetry,
+\emph{Bull. Lond. Math. Soc.} \textbf{50} (2018), 395--400.
+\href{https://doi.org/10.1112/blms.12154}{doi:10.1112/blms.12154}.
+\bibitem{SDT}
+S.~Schmidt, On the quantum symmetry of distance-transitive graphs,
+\emph{Adv. Math.} \textbf{368} (2020), 107150.
+\href{https://doi.org/10.1016/j.aim.2020.107150}{doi:10.1016/j.aim.2020.107150}.
+\bibitem{SS}
+T.~Schneider and P.~Schweitzer, An upper bound on the Weisfeiler--Leman
+dimension, \emph{ICALP 2025}, LIPIcs \textbf{334} (2025), 129:1--129:18. \href{https://doi.org/10.4230/LIPIcs.ICALP.2025.129}{doi:10.4230/LIPIcs.ICALP.2025.129}.
+\bibitem{SH}
+R.~Sharafdini and M.~Hirasaka,
+Coherent configurations over copies of association schemes of prime order,
+\emph{Ars Math. Contemp.} \textbf{12} (2017), 111--126.
+\href{https://arxiv.org/abs/1309.3725}{arXiv:1309.3725}.
+\bibitem{Weber} M. Weber, Quantum permutation matrices, \emph{Complex Anal. Oper. Theory} \textbf{17} (2023), article 37. \href{https://doi.org/10.1007/s11785-023-01335-x}{doi:10.1007/s11785-023-01335-x}.
+\bibitem{ZivAv} M. Ziv-Av, Enumeration of coherent configurations of order at most 15, \emph{Acta Univ. M. Belii Ser. Math.} \textbf{26} (2018), 65--75. \href{https://actamath.savbb.sk/pdf/aumb2605.pdf}{Article and tables}.
+\end{thebibliography}
+
+\end{document}
